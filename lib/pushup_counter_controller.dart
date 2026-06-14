@@ -22,7 +22,39 @@ class PushupCounterController extends ChangeNotifier {
   int _downConfirmCount = 0;
   int _upConfirmCount = 0;
 
+  // RPG Boss battle variables
+  final int enemyMaxHp = 5;
+  int enemyCurrentHp = 5;
+  final String enemyName = "Goblin";
+  final String enemyImagePath = "assets/images/goblin.png";
+
+  bool get isVictory => enemyCurrentHp <= 0;
+
+  void resetBattle() {
+    repCount = 0;
+    currentState = PushUpState.up;
+    feedback = "PUSH UP";
+    enemyCurrentHp = enemyMaxHp;
+    _downConfirmCount = 0;
+    _upConfirmCount = 0;
+    _smoothedAngle = null;
+    _smoothedBodyAngle = null;
+    currentLandmarks.clear();
+    notifyListeners();
+  }
+
+  void _damageEnemy(int amount) {
+    if (enemyCurrentHp > 0) {
+      enemyCurrentHp -= amount;
+      if (enemyCurrentHp <= 0) {
+        enemyCurrentHp = 0;
+        feedback = "VICTORY!";
+      }
+    }
+  }
+
   void processPose(DetectedPose pose) {
+    if (isVictory) return;
     final smoothed = _landmarkSmoother.smooth(pose);
 
     currentLandmarks = {
@@ -90,6 +122,7 @@ class PushupCounterController extends ChangeNotifier {
       if (_upConfirmCount >= PoseTrackingConfig.confirmFrames &&
           currentState == PushUpState.down) {
         repCount++;
+        _damageEnemy(1);
         currentState = PushUpState.up;
         if (isBackStraight) {
           feedback = "LOWER BODY";
@@ -123,6 +156,7 @@ class PushupCounterController extends ChangeNotifier {
       if (_upConfirmCount >= PoseTrackingConfig.confirmFrames &&
           currentState == PushUpState.down) {
         repCount++;
+        _damageEnemy(1);
         currentState = PushUpState.up;
         feedback = "LOWER BODY";
       }
